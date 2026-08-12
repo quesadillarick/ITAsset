@@ -205,12 +205,12 @@ textarea#paste{width:100%;min-height:120px;font-family:var(--mono);font-size:12p
 .tableList li.on{background:var(--steel-dim);border-color:var(--steel);font-weight:600}
 .tableList li .n{flex:1}
 .tableList li .c{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.fieldRow{display:grid;grid-template-columns:1.3fr .9fr 1.6fr auto auto auto;gap:8px;
+.fieldRow{display:grid;grid-template-columns:1.2fr .85fr 1.4fr auto auto auto;gap:8px;
   align-items:center;padding:7px 0;border-bottom:1px solid var(--line-soft)}
 .fieldRow input,.fieldRow select{width:100%;border:1px solid var(--line);border-radius:var(--r);padding:4px 7px}
-.fieldRow .flags{display:flex;gap:10px;align-items:center;white-space:nowrap;font-size:12px;color:var(--muted)}
-.fieldRow .flags label{display:flex;gap:4px;align-items:center;cursor:pointer}
-.fieldHead{display:grid;grid-template-columns:1.3fr .9fr 1.6fr auto auto auto;gap:8px;
+.fieldRow .flags{display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:12px;color:var(--muted)}
+.fieldRow .flags label{display:flex;gap:3px;align-items:center;cursor:pointer}
+.fieldHead{display:grid;grid-template-columns:1.2fr .85fr 1.4fr auto auto auto;gap:8px;
   font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
   padding-bottom:5px;border-bottom:1px solid var(--line)}
 .mv{background:none;border:1px solid var(--line);border-radius:var(--r);cursor:pointer;
@@ -245,6 +245,48 @@ dialog .df{padding:11px 16px;border-top:1px solid var(--line);display:flex;gap:8
 
 html[data-theme="dark"] .btn.primary{color:#0d1319;font-weight:600}
 html[data-theme="dark"] .btn.primary:hover{color:#0d1319}
+/* bulk + focus bars */
+#bulkBar,#focusBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;
+  padding:7px 11px;border-radius:var(--r);border:1px solid var(--steel);background:var(--steel-dim)}
+#focusBar{border-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
+#bulkCount{font-weight:600;color:var(--steel)}
+td.pick,th.pick{width:30px;padding-right:0}
+td.pick input,th.pick input{cursor:pointer}
+tbody tr.picked{background:var(--steel-dim)}
+tbody tr.picked:hover{background:var(--steel-dim)}
+tbody tr.flagged td{box-shadow:inset 3px 0 0 var(--amber)}
+
+/* health */
+#healthBadge{display:none;font-family:var(--mono);font-size:10px;background:var(--amber);
+  color:#fff;border-radius:9px;padding:0 6px;margin-left:5px;vertical-align:1px}
+#healthBadge.on{display:inline-block}
+#healthBadge.clean{background:var(--green)}
+.issue{border-left:3px solid var(--amber)}
+.issue.clean{border-left-color:var(--green)}
+.issue h3{margin:0 0 4px;font-size:13px}
+.issue .rowlist{font-family:var(--mono);font-size:12px;color:var(--muted);margin:5px 0 0;
+  max-height:150px;overflow:auto}
+
+/* scan */
+#dlgScan{max-width:760px}
+.scanStatus{padding:14px 16px;border-radius:var(--r);margin-bottom:11px;font-size:15px;
+  border:1px solid var(--line);background:var(--thbg);color:var(--muted);min-height:58px}
+.scanStatus.ok{border-color:var(--green);background:var(--diffbg);color:var(--green);font-weight:600}
+.scanStatus.dupe{border-color:var(--amber);background:var(--amber-dim);color:var(--amber);font-weight:600}
+.scanStatus.miss{border-color:var(--crimson);background:var(--amber-dim);color:var(--crimson);font-weight:600}
+.scanStatus .det{display:block;font-weight:400;font-size:13px;color:var(--muted);margin-top:4px}
+#scanFeed{max-height:230px;overflow:auto;border-top:1px solid var(--line-soft);margin-top:6px}
+.feedRow{display:flex;gap:10px;padding:4px 2px;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+.feedRow .t{font-family:var(--mono);color:var(--muted);flex:0 0 60px}
+.feedRow .k{font-family:var(--mono);flex:0 0 130px}
+.feedRow.ok .k{color:var(--green)}
+.feedRow.dupe .k{color:var(--amber)}
+.feedRow.miss .k{color:var(--crimson)}
+
+/* stale copy banner */
+#staleBanner{display:none;background:var(--amber);color:#fff;padding:8px 16px;font-size:13px;font-weight:500}
+body.stale #staleBanner{display:block}
+
 #roBanner{display:none;background:var(--amber-dim);border-bottom:1px solid var(--amber);
   color:var(--amber);padding:7px 16px;font-size:13px}
 body.readonly #roBanner{display:block}
@@ -268,7 +310,8 @@ body.readonly .editonly{display:none !important}
     --thbg:#fff;--filterbg:#fff;--rowhover:#fff;--diffbg:#fff;color-scheme:light;
   }
   body{background:#fff;color:#000;font-size:10.5pt}
-  header,#rail,nav,#filters,#roBanner,#toast,td.actions,th.actions,thead tr.filters{display:none !important}
+  header,#rail,nav,#filters,#roBanner,#staleBanner,#bulkBar,#focusBar,#toast,
+  td.actions,th.actions,td.pick,th.pick,thead tr.filters{display:none !important}
   main{overflow:visible;padding:0}
   .tablewrap{max-height:none;overflow:visible}
   .panel{border:0}
@@ -313,16 +356,19 @@ body.readonly .editonly{display:none !important}
   <button class="btn sm editonly" id="btnForget" style="display:none" title="Stop remembering this file on this machine">Forget file</button>
 </div>
 
+<div id="staleBanner"></div>
 <div id="roBanner">Read-only copy. Anything you change here is not saved and will not reach the master file.</div>
 
 <nav>
   <span id="tableTabs" data-dynamic style="display:flex"></span>
   <span class="sep"></span>
   <button class="tab" data-view="log">Change log</button>
+  <button class="tab" data-view="health">Health <span id="healthBadge"></span></button>
   <button class="tab editonly" data-view="import">Import</button>
   <button class="tab editonly" data-view="manage">Tables &amp; fields</button>
   <span class="spacer"></span>
   <span class="tools">
+    <button class="btn editonly" id="btnScan">Scan mode</button>
     <button class="btn primary editonly" id="btnAdd">Add record</button>
     <button class="btn editonly" id="btnSave">Save</button>
     <button class="btn" id="btnCsv">Export CSV</button>
@@ -341,8 +387,20 @@ body.readonly .editonly{display:none !important}
       <label class="inline" style="gap:5px"><span class="note">Group by</span>
         <select id="groupBy" data-dynamic style="border:1px solid var(--line);border-radius:var(--r);padding:5px 8px;background:var(--panel)"></select>
       </label>
+      <label class="inline" style="gap:5px"><span class="note">View</span>
+        <select id="viewSel" data-dynamic style="border:1px solid var(--line);border-radius:var(--r);padding:5px 8px;background:var(--panel)"></select>
+      </label>
+      <button class="btn editonly" id="btnSaveView" title="Save the current filters, grouping and sort as a named view">Save view</button>
+      <button class="btn editonly" id="btnDelView" title="Delete the selected view">&times;</button>
       <button class="btn" id="btnClear">Clear all filters</button>
       <span class="count" id="countLine"></span>
+    </div>
+    <div id="focusBar" style="display:none"></div>
+    <div id="bulkBar" class="editonly" style="display:none">
+      <span id="bulkCount"></span>
+      <button class="btn sm" id="btnBulkSet">Set a column&hellip;</button>
+      <button class="btn sm danger" id="btnBulkDel">Delete selected</button>
+      <button class="btn sm" id="btnBulkClear">Clear selection</button>
     </div>
     <div class="panel" id="dataPanel">
       <div class="tablewrap">
@@ -360,6 +418,11 @@ body.readonly .editonly{display:none !important}
       <span class="count" id="logCount"></span>
     </div>
     <div class="panel" id="logPanel"><div id="logList" data-dynamic></div></div>
+  </section>
+
+  <!-- HEALTH -->
+  <section class="view" id="viewHealth">
+    <div class="stack"><div id="healthList" data-dynamic></div></div>
   </section>
 
   <!-- IMPORT -->
@@ -469,6 +532,21 @@ body.readonly .editonly{display:none !important}
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Automatic backups</h2>
+        <p class="help">Pick a folder and the app drops a dated snapshot into it as you work — on every
+          manual save, and periodically during autosave. It keeps the newest <b id="keepN"></b> and
+          deletes older ones. Each snapshot is a complete, openable copy of this app with its data.</p>
+        <div class="inline">
+          <button class="btn" id="btnBackupDir">Choose backup folder</button>
+          <button class="btn" id="btnBackupNow">Back up now</button>
+          <button class="btn" id="btnBackupOff" style="display:none">Turn off</button>
+          <span class="note" id="backupState"></span>
+        </div>
+        <p class="help" style="margin:10px 0 0">Put this somewhere separate from the master file —
+          a different drive or share, so one bad disk doesn't take both.</p>
+      </div>
     </div>
   </section>
 </main>
@@ -479,6 +557,41 @@ body.readonly .editonly{display:none !important}
   <div class="df">
     <button class="btn" id="btnCancelEdit">Cancel</button>
     <button class="btn primary" id="btnSaveRec">Save record</button>
+  </div>
+</dialog>
+
+<dialog id="dlgScan">
+  <div class="dh">Scan mode
+    <span class="id" id="scanTally"></span>
+  </div>
+  <div class="db">
+    <div id="scanStatus" class="scanStatus idle">Scan a barcode or type a tag and press Enter</div>
+    <input id="scanInput" class="mono" placeholder="Waiting for scan..." autocomplete="off"
+      style="width:100%;font-size:19px;padding:9px;border:2px solid var(--steel);border-radius:var(--r);background:var(--panel)">
+    <div class="inline" style="margin:9px 0 4px">
+      <label class="inline" style="gap:5px"><input type="checkbox" id="scanStamp" checked style="width:auto"> Stamp Last Verified with today's date</label>
+      <span class="grow" style="flex:1"></span>
+      <button class="btn sm" id="btnScanAdd" style="display:none"></button>
+    </div>
+    <div id="scanFeed" data-dynamic></div>
+  </div>
+  <div class="df">
+    <button class="btn" id="btnScanExport">Export session list</button>
+    <button class="btn primary" id="btnScanDone">Done</button>
+  </div>
+</dialog>
+
+<dialog id="dlgBulk">
+  <div class="dh">Set a column on selected records<span class="id" id="bulkTarget"></span></div>
+  <div class="db">
+    <div class="field"><label>Column</label><select id="bulkField" data-dynamic></select></div>
+    <div class="field"><label>New value</label><div id="bulkValueWrap" data-dynamic></div></div>
+    <p class="note" style="margin:0">This overwrites the current value on every selected record.
+      One change log entry is written covering all of them.</p>
+  </div>
+  <div class="df">
+    <button class="btn" id="btnBulkCancel">Cancel</button>
+    <button class="btn primary" id="btnBulkApply">Apply</button>
   </div>
 </dialog>
 
@@ -532,13 +645,14 @@ const DEFAULT_TABLES = [{
     {key:"type",     label:"Type",         type:"choice", grid:true, options:["Laptop","Desktop","Monitor","Printer","Server","Network Device","Peripheral","Other"]},
     {key:"manufacturer", label:"Manufacturer", type:"text", grid:true},
     {key:"model",    label:"Model",        type:"text",   grid:true},
-    {key:"serial",   label:"Serial Number",type:"text",   mono:true, grid:true},
+    {key:"serial",   label:"Serial Number",type:"text",   mono:true, grid:true, unique:true},
     {key:"network",  label:"Network",      type:"choice", grid:true, options:[]},
     {key:"status",   label:"Status",       type:"choice", grid:true, options:["In Use","In Storage","In Repair","Retired"]},
     {key:"assigned", label:"Assigned To",  type:"text",   grid:true},
     {key:"room",     label:"Room",         type:"text",   grid:true},
     {key:"cubicle",  label:"Cubicle",      type:"text",   grid:true},
     {key:"location", label:"Location",     type:"text",   grid:true},
+    {key:"verified", label:"Last Verified",type:"date",   grid:true},
     {key:"notes",    label:"Notes",        type:"notes",  grid:false}
   ],
   rows:[]
@@ -549,6 +663,16 @@ const CHIP = {"in use":"in-use","in storage":"storage","in repair":"repair","ret
 let DB, handle = null, dirty = false, autosaveTimer = null;
 let curTable = null, editingId = null, staged = null, manageTable = null;
 const sortState = {}, colFilters = {}, groupBy = {};
+const STALE_DAYS = 30, BACKUP_KEEP = 10, BACKUP_EVERY = 20;
+let selection = new Set(), focusIds = null, backupDir = null, saveCount = 0;
+let scanSeen = new Set(), scanLog = [];
+
+function daysBetween(iso){
+  if(!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  if(isNaN(d)) return null;
+  return Math.floor((new Date(today() + "T00:00:00") - d) / 86400000);
+}
 
 function buildGroupSel(){
   const t = T();
@@ -570,6 +694,7 @@ function load(){
   try{ DB = JSON.parse($("#db").textContent); }catch(e){ DB = {}; }
   DB.schemaVersion = 2;
   DB.log = DB.log || [];
+  DB.views = DB.views || {};
   if(!DB.tables){
     if(Array.isArray(DB.assets) && DB.assets.length){
       DB.tables = JSON.parse(JSON.stringify(DEFAULT_TABLES));
@@ -638,6 +763,60 @@ async function idbGet(k){
       q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
     });
   }catch(e){ return null; }
+}
+
+/* ---------------- backups ---------------- */
+async function chooseBackupDir(){
+  if(!window.showDirectoryPicker) return toast("This browser can't pick folders — use Edge or Chrome");
+  try{
+    backupDir = await window.showDirectoryPicker({mode:"readwrite"});
+    await idbSet("backupDir", backupDir);
+    backupState();
+    toast("Backups will go to " + backupDir.name);
+    writeBackup(true);
+  }catch(e){}
+}
+async function backupOff(){
+  backupDir = null; await idbSet("backupDir", null); backupState();
+  toast("Automatic backups turned off");
+}
+function backupState(){
+  const on = !!backupDir;
+  $("#backupState").textContent = on
+    ? "Saving snapshots to \\" + backupDir.name + "\\"
+    : "No backup folder set — snapshots are not being kept";
+  $("#btnBackupOff").style.display = on ? "inline-block" : "none";
+  $("#btnBackupDir").textContent = on ? "Change folder" : "Choose backup folder";
+  $("#btnBackupNow").disabled = !on;
+  $("#keepN").textContent = BACKUP_KEEP;
+}
+async function writeBackup(loud){
+  if(!backupDir || DB.readOnly){ if(loud) toast("Choose a backup folder first"); return; }
+  try{
+    let p = await backupDir.queryPermission({mode:"readwrite"});
+    if(p !== "granted") p = await backupDir.requestPermission({mode:"readwrite"});
+    if(p !== "granted"){ if(loud) toast("Folder access not granted"); return; }
+    const d = new Date(), pad = n => String(n).padStart(2,"0");
+    const name = "AssetRegistry_" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
+      "_" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + ".html";
+    const fh = await backupDir.getFileHandle(name, {create:true});
+    const w = await fh.createWritable(); await w.write(serialize(DB)); await w.close();
+    const names = [];
+    for await (const [n] of backupDir.entries())
+      if(/^AssetRegistry_\d{8}_\d{6}\.html$/.test(n)) names.push(n);
+    names.sort();
+    while(names.length > BACKUP_KEEP){
+      try{ await backupDir.removeEntry(names.shift()); }catch(e){ break; }
+    }
+    if(loud) toast("Snapshot saved — " + Math.min(names.length, BACKUP_KEEP) + " kept");
+  }catch(e){ if(loud) toast("Backup failed: " + e.message); }
+}
+async function restoreBackupDir(){
+  const d = await idbGet("backupDir");
+  if(d && d.queryPermission){
+    try{ if(await d.queryPermission({mode:"readwrite"}) !== "denied") backupDir = d; }catch(e){}
+  }
+  backupState();
 }
 
 async function remember(h){ await idbSet("master", h); }
@@ -727,6 +906,8 @@ async function save(silent){
   try{
     const w = await handle.createWritable(); await w.write(html); await w.close();
     dirty = false; rail("saved", "Saved " + new Date().toLocaleTimeString());
+    saveCount++;
+    if(backupDir && (!silent || saveCount % BACKUP_EVERY === 0)) writeBackup(false);
     if(!silent) toast("Saved to " + handle.name);
   }catch(e){
     rail("dirty", "Save failed — export a read-only copy as a backup");
@@ -784,6 +965,92 @@ const OPS_TEXT = {has:"contains", is:"is exactly", starts:"starts with", ends:"e
 const OPS_CHOICE = {is:"is exactly", not:"is not", has:"contains", empty:"is empty", filled:"is filled"};
 const NAT = new Intl.Collator(undefined, {numeric:true, sensitivity:"base"});
 
+/* ---------------- integrity ---------------- */
+function issuesFor(t){
+  const out = [];
+  const uniq = t.fields.filter(f => f.unique || f.key === t.keyField);
+  uniq.forEach(f => {
+    const seen = {}, dupes = {};
+    t.rows.forEach(r => {
+      const v = String(r[f.key]||"").trim().toLowerCase();
+      if(!v) return;
+      if(seen[v]) dupes[v] = (dupes[v]||[seen[v]]).concat([r]); else seen[v] = r;
+    });
+    const keys = Object.keys(dupes);
+    if(keys.length) out.push({
+      kind:"dupe", table:t,
+      title:"Duplicate " + f.label + " values",
+      detail: keys.length + (keys.length === 1 ? " value appears" : " values appear") +
+        " on more than one record. " + (f.key === t.keyField
+          ? "Import matching keys on this column, so duplicates make merges unpredictable."
+          : "This column is marked unique."),
+      samples: keys.slice(0,25).map(k => dupes[k][0][f.key] + "  \u00d7" + dupes[k].length),
+      ids: keys.flatMap(k => dupes[k].map(r => r._id))
+    });
+  });
+  t.fields.filter(f => f.required || f.key === t.keyField).forEach(f => {
+    const bad = t.rows.filter(r => !String(r[f.key]||"").trim());
+    if(bad.length) out.push({
+      kind:"blank", table:t,
+      title:"Blank " + f.label,
+      detail: bad.length + (bad.length === 1 ? " record is" : " records are") +
+        " missing a value in a required column.",
+      samples: bad.slice(0,25).map(r => r[t.keyField] || "(no identifier)"),
+      ids: bad.map(r => r._id)
+    });
+  });
+  const vf = t.fields.find(f => f.key === "verified");
+  if(vf){
+    const stale = t.rows.filter(r => {
+      const d = daysBetween(r[vf.key]);
+      return d === null || d > 365;
+    });
+    if(stale.length) out.push({
+      kind:"stale", table:t,
+      title:"Not verified in the last year",
+      detail: stale.length + (stale.length === 1 ? " record has" : " records have") +
+        " no verification in the past 365 days. Scan mode stamps this column.",
+      samples: stale.slice(0,25).map(r => (r[t.keyField]||"(no identifier)") +
+        "  " + (r[vf.key] ? r[vf.key] : "never")),
+      ids: stale.map(r => r._id)
+    });
+  }
+  return out;
+}
+function allIssues(){ return DB.tables.flatMap(t => issuesFor(t)); }
+
+function renderHealth(){
+  const list = allIssues();
+  const badge = $("#healthBadge");
+  badge.className = "on" + (list.length ? "" : " clean");
+  badge.textContent = list.length ? list.length : "\u2713";
+  $("#healthList").innerHTML = list.length ? list.map((iss,i) =>
+    '<div class="card issue"><h3>' + esc(iss.title) + " &mdash; " + esc(iss.table.name) + "</h3>" +
+    '<p class="help" style="margin:0 0 6px">' + esc(iss.detail) + "</p>" +
+    '<button class="btn sm" data-iss="' + i + '">Show these ' + iss.ids.length + " records</button>" +
+    '<div class="rowlist">' + iss.samples.map(s => esc(s)).join("<br>") +
+      (iss.ids.length > 25 ? "<br>&hellip;" : "") + "</div></div>").join("")
+    : '<div class="card issue clean"><h3>No problems found</h3><p class="help" style="margin:0">' +
+      "Checked for duplicate identifiers and unique columns, blanks in required columns, " +
+      "and records not verified in the past year.</p></div>";
+  $("#healthList").querySelectorAll("[data-iss]").forEach(b => b.onclick = () => {
+    const iss = list[+b.dataset.iss];
+    curTable = iss.table.id;
+    focusIds = new Set(iss.ids);
+    focusLabel = iss.title;
+    show("data"); renderTabs(); buildHead(); renderRows();
+  });
+}
+let focusLabel = "";
+function renderFocusBar(){
+  const bar = $("#focusBar");
+  if(!focusIds){ bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  bar.innerHTML = "<span>Showing only records flagged as: <b>" + esc(focusLabel) + "</b></span>" +
+    '<button class="btn sm" id="btnUnfocus">Show everything</button>';
+  $("#btnUnfocus").onclick = () => { focusIds = null; renderFocusBar(); renderRows(); };
+}
+
 function gridFields(t){ return t.fields.filter(f => f.grid !== false); }
 function distinct(t, key){
   return [...new Set(t.rows.map(r => r[key]).filter(v => v !== undefined && v !== ""))]
@@ -798,10 +1065,11 @@ function fActive(f){ return f.op === "empty" || f.op === "filled" || !!f.v; }
 function buildHead(){
   const t = T(), gf = gridFields(t), st = sortState[t.id] || (sortState[t.id] = {key:t.keyField, dir:1});
   $("#thead").innerHTML =
-    "<tr>" + gf.map(f => '<th data-key="' + f.key + '">' + esc(f.label) +
+    '<tr><th class="pick editonly"><input type="checkbox" id="pickAll" title="Select everything shown"></th>' +
+    gf.map(f => '<th data-key="' + f.key + '">' + esc(f.label) +
       '<span class="ind">' + (st.key === f.key ? (st.dir > 0 ? "\u2191" : "\u2193") : "") + "</span></th>").join("") +
       '<th class="actions editonly"></th></tr>' +
-    '<tr class="filters">' + gf.map(f => {
+    '<tr class="filters"><th class="pick editonly"></th>' + gf.map(f => {
       const cur = getF(t.id, f.key), isChoice = f.type === "choice";
       const ops = isChoice ? OPS_CHOICE : OPS_TEXT;
       const noVal = cur.op === "empty" || cur.op === "filled";
@@ -841,6 +1109,13 @@ function buildHead(){
     });
   });
   buildGroupSel();
+  const pa = $("#pickAll");
+  if(pa) pa.onclick = () => {
+    const ids = filtered().map(r => r._id);
+    if(pa.checked) ids.forEach(i => selection.add(i));
+    else ids.forEach(i => selection.delete(i));
+    renderRows();
+  };
 }
 
 function cellMatches(cell, f){
@@ -862,6 +1137,7 @@ function filtered(){
   const st = sortState[t.id] || {key:t.keyField, dir:1};
   const gb = groupBy[t.id] || "";
   return t.rows.filter(r => {
+    if(focusIds && !focusIds.has(r._id)) return false;
     for(const k in cf){
       const f = cf[k];
       if(!fActive(f)) continue;
@@ -887,12 +1163,13 @@ function renderRows(){
     em.innerHTML = t.rows.length
       ? "<strong>Nothing matches those filters</strong>Clear them to see all " + t.rows.length + " records."
       : "<strong>" + esc(t.name) + " is empty</strong>Add a record, or bring a spreadsheet over on the Import tab.";
-    $("#printDetail").innerHTML = ""; return;
+    $("#printDetail").innerHTML = ""; renderFocusBar(); renderBulkBar(); return;
   }
   em.style.display = "none";
+  renderFocusBar();
   const gb = groupBy[t.id] || "";
   const gbLabel = gb ? (t.fields.find(f => f.key === gb)||{}).label : "";
-  const span = gf.length + 1;
+  const span = gf.length + 2;
   let last = null, html = "";
   rows.forEach(r => {
     if(gb){
@@ -904,17 +1181,29 @@ function renderRows(){
           '<span class="gcount">' + n + (n === 1 ? " asset" : " assets") + "</span></td></tr>";
       }
     }
-    html += "<tr>" + gf.map(f => {
-      const v = r[f.key] || "";
-      if(f.type === "choice" && v)
-        return '<td><span class="chip ' + (CHIP[v.toLowerCase()]||"") + '">' + esc(v) + "</span></td>";
-      return '<td class="' + (f.mono?"mono":"") + '">' + esc(v) + "</td>";
-    }).join("") + '<td class="actions editonly"><button data-e="' + r._id + '">Edit</button>' +
+    const on = selection.has(r._id);
+    html += '<tr class="' + (on ? "picked" : "") + '">' +
+      '<td class="pick editonly"><input type="checkbox" data-p="' + r._id + '"' + (on ? " checked" : "") + "></td>" +
+      gf.map(f => {
+        const v = r[f.key] || "";
+        if(f.type === "choice" && v)
+          return '<td><span class="chip ' + (CHIP[v.toLowerCase()]||"") + '">' + esc(v) + "</span></td>";
+        return '<td class="' + (f.mono?"mono":"") + '">' + esc(v) + "</td>";
+      }).join("") + '<td class="actions editonly"><button data-e="' + r._id + '">Edit</button>' +
       '<button class="del" data-d="' + r._id + '">Delete</button></td></tr>';
   });
   tb.innerHTML = html;
   tb.querySelectorAll("[data-e]").forEach(b => b.onclick = () => openEdit(b.dataset.e));
   tb.querySelectorAll("[data-d]").forEach(b => b.onclick = () => removeRec(b.dataset.d));
+  tb.querySelectorAll("[data-p]").forEach(b => b.onclick = e => {
+    if(e.target.checked) selection.add(b.dataset.p); else selection.delete(b.dataset.p);
+    renderBulkBar();
+    b.closest("tr").classList.toggle("picked", e.target.checked);
+  });
+  const shown = rows.map(r => r._id);
+  const pa = $("#pickAll");
+  if(pa) pa.checked = shown.length > 0 && shown.every(i => selection.has(i));
+  renderBulkBar();
 
   last = null;
   $("#printDetail").innerHTML = rows.map(r => {
@@ -933,11 +1222,193 @@ function renderTabs(){
     '<button class="tab" data-table="' + t.id + '" aria-selected="' +
     (t.id === curTable && $("#viewData").classList.contains("on")) + '">' + esc(t.name) + "</button>").join("");
   $("#tableTabs").querySelectorAll("[data-table]").forEach(b => b.onclick = () => {
-    curTable = b.dataset.table; show("data"); buildHead(); renderRows();
+    curTable = b.dataset.table; selection.clear(); focusIds = null;
+    show("data"); buildViewSel(); buildHead(); renderRows();
   });
 }
 
 /* ---------------- record editor ---------------- */
+/* ---------------- bulk edit ---------------- */
+function renderBulkBar(){
+  const n = selection.size;
+  $("#bulkBar").style.display = (n && !DB.readOnly) ? "flex" : "none";
+  $("#bulkCount").textContent = n + (n === 1 ? " record selected" : " records selected");
+}
+function openBulk(){
+  const t = T();
+  if(!selection.size) return;
+  $("#bulkTarget").textContent = selection.size + " records";
+  $("#bulkField").innerHTML = t.fields.filter(f => f.key !== t.keyField)
+    .map(f => '<option value="' + f.key + '">' + esc(f.label) + "</option>").join("");
+  bulkValue();
+  $("#dlgBulk").showModal();
+}
+function bulkValue(){
+  const t = T(), f = t.fields.find(x => x.key === $("#bulkField").value);
+  if(!f) return;
+  if(f.type === "choice"){
+    const vals = [...new Set((f.options||[]).concat(distinct(t, f.key)))].sort((a,b) => NAT.compare(a,b));
+    $("#bulkValueWrap").innerHTML = '<input id="bulkVal" list="bulkdl"><datalist id="bulkdl">' +
+      vals.map(o => "<option>" + esc(o) + "</option>").join("") + "</datalist>";
+  } else if(f.type === "date"){
+    $("#bulkValueWrap").innerHTML = '<input id="bulkVal" type="date">';
+  } else {
+    $("#bulkValueWrap").innerHTML = '<input id="bulkVal" placeholder="Leave blank to clear the column">';
+  }
+}
+function applyBulk(){
+  const t = T(), key = $("#bulkField").value, v = $("#bulkVal").value.trim();
+  const f = t.fields.find(x => x.key === key);
+  const hit = t.rows.filter(r => selection.has(r._id));
+  let n = 0;
+  hit.forEach(r => { if((r[key]||"") !== v){ r[key] = v; n++; } });
+  $("#dlgBulk").close();
+  if(!n) return toast("Nothing changed — they already had that value");
+  logIt("edit", t.name, n + " records (bulk)",
+    [{label:f.label, from:"(various)", to:v || "(cleared)"}]);
+  touch(); buildHead(); renderRows(); renderLog(); renderHealth();
+  toast("Set " + f.label + " on " + n + " records");
+}
+function bulkDelete(){
+  const t = T(), hit = t.rows.filter(r => selection.has(r._id));
+  if(!hit.length) return;
+  if(!confirm("Delete " + hit.length + " selected records? The change log keeps a record of them.")) return;
+  t.rows = t.rows.filter(r => !selection.has(r._id));
+  logIt("delete", t.name, hit.length + " records (bulk)",
+    hit.slice(0,40).map(r => ({label:"Removed", from:r[t.keyField]||"(no identifier)", to:""})));
+  selection.clear();
+  touch(); buildHead(); renderRows(); renderLog(); renderHealth();
+  toast("Deleted " + hit.length + " records");
+}
+
+/* ---------------- saved views ---------------- */
+function buildViewSel(){
+  const t = T(), list = DB.views[t.id] || [];
+  $("#viewSel").innerHTML = '<option value="">— none —</option>' +
+    list.map((v,i) => '<option value="' + i + '">' + esc(v.name) + "</option>").join("");
+}
+function saveView(){
+  const t = T(), name = prompt("Name this view (e.g. \"Room 214 report\"):");
+  if(!name || !name.trim()) return;
+  const v = {
+    name: name.trim(),
+    q: $("#q").value,
+    filters: JSON.parse(JSON.stringify(colFilters[t.id] || {})),
+    group: groupBy[t.id] || "",
+    sort: JSON.parse(JSON.stringify(sortState[t.id] || {key:t.keyField, dir:1}))
+  };
+  DB.views[t.id] = (DB.views[t.id] || []).filter(x => x.name !== v.name).concat([v])
+    .sort((a,b) => NAT.compare(a.name, b.name));
+  touch(); buildViewSel();
+  $("#viewSel").value = (DB.views[t.id] || []).findIndex(x => x.name === v.name);
+  toast('Saved view "' + v.name + '"');
+}
+function applyView(i){
+  const t = T(), v = (DB.views[t.id] || [])[i];
+  if(!v){ colFilters[t.id] = {}; $("#q").value = ""; groupBy[t.id] = ""; buildHead(); renderRows(); return; }
+  $("#q").value = v.q || "";
+  colFilters[t.id] = JSON.parse(JSON.stringify(v.filters || {}));
+  groupBy[t.id] = v.group || "";
+  sortState[t.id] = JSON.parse(JSON.stringify(v.sort || {key:t.keyField, dir:1}));
+  focusIds = null;
+  buildHead(); renderRows();
+}
+function deleteView(){
+  const t = T(), i = $("#viewSel").value;
+  if(i === "") return toast("Pick a view to delete");
+  const v = (DB.views[t.id]||[])[+i];
+  if(!v || !confirm('Delete the view "' + v.name + '"? Your data is not affected.')) return;
+  DB.views[t.id].splice(+i, 1);
+  touch(); buildViewSel(); toast("View deleted");
+}
+
+/* ---------------- scan mode ---------------- */
+function verifiedField(t){ return t.fields.find(f => f.key === "verified"); }
+function openScan(){
+  const t = T();
+  if(!verifiedField(t)){
+    if(!confirm('This table has no "Last Verified" column. Add one now so scans can stamp a date?'))
+      return;
+    t.fields.push({key:"verified", label:"Last Verified", type:"date", grid:true});
+    schemaLogged(t, "Added column", "", "Last Verified");
+    renderManage();
+  }
+  scanSeen = new Set(); scanLog = [];
+  scanStatus("idle", "Scan a barcode or type a tag and press Enter", "");
+  $("#scanFeed").innerHTML = ""; $("#btnScanAdd").style.display = "none";
+  scanTally();
+  $("#dlgScan").showModal();
+  setTimeout(() => $("#scanInput").focus(), 30);
+}
+function scanStatus(cls, msg, det){
+  $("#scanStatus").className = "scanStatus " + cls;
+  $("#scanStatus").innerHTML = esc(msg) + (det ? '<span class="det">' + esc(det) + "</span>" : "");
+}
+function scanTally(){
+  const ok = scanLog.filter(x => x.cls === "ok").length;
+  const miss = scanLog.filter(x => x.cls === "miss").length;
+  const dupe = scanLog.filter(x => x.cls === "dupe").length;
+  $("#scanTally").textContent = ok + " verified \u00b7 " + miss + " unknown \u00b7 " + dupe + " repeat";
+}
+function scanFeed(cls, code, note){
+  scanLog.unshift({cls, code, note, t:new Date().toLocaleTimeString().replace(/:\d\d /," ")});
+  $("#scanFeed").innerHTML = scanLog.map(x =>
+    '<div class="feedRow ' + x.cls + '"><span class="t">' + esc(x.t) + '</span>' +
+    '<span class="k">' + esc(x.code) + "</span><span>" + esc(x.note) + "</span></div>").join("");
+  scanTally();
+}
+function doScan(raw){
+  const t = T(), code = raw.trim();
+  if(!code) return;
+  $("#scanInput").value = "";
+  $("#btnScanAdd").style.display = "none";
+  const lc = code.toLowerCase();
+  const hit = t.rows.find(r => String(r[t.keyField]||"").trim().toLowerCase() === lc)
+    || t.rows.find(r => String(r.serial||"").trim().toLowerCase() === lc);
+  if(!hit){
+    scanStatus("miss", "Not in the registry: " + code, "Nothing matches this identifier or serial number.");
+    scanFeed("miss", code, "not found");
+    const b = $("#btnScanAdd");
+    b.textContent = 'Add "' + code + '" as a new record';
+    b.style.display = "inline-block";
+    b.onclick = () => { $("#dlgScan").close(); openEdit(null);
+      const first = $("#dlgBody").querySelector("[data-k]"); if(first) first.value = code; };
+    return;
+  }
+  const label = [hit[t.keyField], hit.manufacturer, hit.model].filter(Boolean).join("  ");
+  const where = [hit.room && "Room " + hit.room, hit.cubicle && "Cubicle " + hit.cubicle,
+    hit.assigned, hit.location].filter(Boolean).join("  \u00b7  ");
+  if(scanSeen.has(hit._id)){
+    scanStatus("dupe", "Already scanned: " + label, where);
+    scanFeed("dupe", code, "repeat scan");
+    return;
+  }
+  scanSeen.add(hit._id);
+  const vf = verifiedField(t);
+  if(vf && $("#scanStamp").checked){
+    const was = hit[vf.key] || "";
+    if(was !== today()){
+      hit[vf.key] = today();
+      logIt("edit", t.name, hit[t.keyField], [{label:vf.label, from:was, to:today()}]);
+      touch();
+    }
+  }
+  scanStatus("ok", "Verified: " + label, where || "No location on file");
+  scanFeed("ok", code, where || "verified");
+}
+function scanExport(){
+  const q = v => /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+  const csv = ["Time,Code,Result"].concat(scanLog.map(x =>
+    [q(x.t), q(x.code), q(x.cls === "ok" ? "verified" : x.cls === "miss" ? "not found" : "repeat")].join(","))
+  ).join("\r\n");
+  download("ScanSession_" + today() + ".csv", "\ufeff" + csv, "text/csv");
+}
+function closeScan(){
+  $("#dlgScan").close();
+  buildHead(); renderRows(); renderLog(); renderHealth();
+  if(scanSeen.size) toast("Verified " + scanSeen.size + " records this session");
+}
+
 function openEdit(id){
   if(DB.readOnly) return;
   const t = T(); editingId = id || null;
@@ -972,6 +1443,17 @@ function commitEdit(){
     box.classList.toggle("bad", empty); if(empty) bad = true;
   });
   if(bad) return;
+
+  const clash = t.fields.filter(f => f.unique || f.key === t.keyField).map(f => {
+    const v = String(vals[f.key]||"").trim().toLowerCase();
+    if(!v) return null;
+    const other = t.rows.find(r => r._id !== editingId &&
+      String(r[f.key]||"").trim().toLowerCase() === v);
+    return other ? f.label + ' "' + vals[f.key] + '" is already on ' +
+      (other[t.keyField] || "another record") : null;
+  }).filter(Boolean);
+  if(clash.length && !confirm(clash.join("\n") + "\n\nSave anyway?")) return;
+
   if(editingId){
     const r = t.rows.find(x => x._id === editingId);
     const ch = t.fields.filter(f => (r[f.key]||"") !== vals[f.key])
@@ -985,7 +1467,7 @@ function commitEdit(){
     logIt("add", t.name, r[t.keyField], t.fields.filter(f => vals[f.key])
       .map(f => ({label:f.label, from:"", to:vals[f.key]})));
   }
-  $("#dlgEdit").close(); touch(); buildHead(); renderRows(); renderLog(); rail(dirty?"dirty":"", "Unsaved changes");
+  $("#dlgEdit").close(); touch(); buildHead(); renderRows(); renderLog(); renderHealth(); rail(dirty?"dirty":"", "Unsaved changes");
 }
 function removeRec(id){
   const t = T(), r = t.rows.find(x => x._id === id);
@@ -1021,6 +1503,8 @@ function renderManage(){
           (f.grid !== false ? " checked":"") + "> Grid</label>" +
         '<label title="Must be filled in"><input type="checkbox" data-p="required"' +
           (f.required ? " checked":"") + "> Req</label>" +
+        '<label title="Flag duplicates of this value on the Health tab"><input type="checkbox" data-p="unique"' +
+          (f.unique ? " checked":"") + "> Uniq</label>" +
       "</span>" +
       '<span><button class="mv" data-mv="-1">&uarr;</button> <button class="mv" data-mv="1">&darr;</button></span>' +
       '<button class="btn sm danger" data-del="1">Delete</button>' +
@@ -1055,6 +1539,11 @@ function renderManage(){
     row.querySelector('[data-p="required"]').onchange = e => {
       f.required = e.target.checked;
       schemaLogged(t, f.label + " required", String(!f.required), String(f.required));
+    };
+    row.querySelector('[data-p="unique"]').onchange = e => {
+      f.unique = e.target.checked;
+      schemaLogged(t, f.label + " must be unique", String(!f.unique), String(f.unique));
+      renderHealth();
     };
     row.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => {
       const j = i + (+b.dataset.mv);
@@ -1208,7 +1697,7 @@ function runImport(){
 
   staged = null; $("#mapCard").style.display = "none"; $("#paste").value = ""; $("#csvFile").value = "";
   curTable = t.id;
-  touch(); renderTabs(); show("data"); buildHead(); renderRows(); renderLog(); renderManage();
+  touch(); renderTabs(); show("data"); buildHead(); renderRows(); renderLog(); renderManage(); renderHealth();
   toast(mode === "replace" ? "Replaced with " + added + " records" : "Added " + added + ", updated " + updated);
 }
 
@@ -1234,11 +1723,47 @@ function init(){
   $("#hdrSub").textContent = DB.readOnly ? "read-only copy" : "master copy";
   rail("", DB.readOnly ? "Read-only" : "Not bound to a file yet");
   renderTabs(); buildHead(); renderRows(); renderLog(); renderManage(); buildImportTables();
+  buildViewSel(); renderHealth(); backupState();
+
+  if(DB.readOnly && DB.exported){
+    const age = daysBetween(DB.exported);
+    if(age !== null && age > STALE_DAYS){
+      document.body.classList.add("stale");
+      $("#staleBanner").textContent = "This copy was exported " + age +
+        " days ago (" + DB.exported + "). Ask for a current copy before relying on it.";
+    }
+  }
 
   document.querySelectorAll("nav .tab[data-view]").forEach(b => b.onclick = () => show(b.dataset.view));
   $("#q").oninput = renderRows;
   $("#logQ").oninput = renderLog;
   $("#groupBy").onchange = e => { groupBy[T().id] = e.target.value; renderRows(); };
+  $("#viewSel").onchange = e => applyView(e.target.value === "" ? -1 : +e.target.value);
+  $("#btnSaveView").onclick = saveView;
+  $("#btnDelView").onclick = deleteView;
+
+  $("#btnBulkSet").onclick = openBulk;
+  $("#btnBulkDel").onclick = bulkDelete;
+  $("#btnBulkClear").onclick = () => { selection.clear(); buildHead(); renderRows(); };
+  $("#bulkField").onchange = bulkValue;
+  $("#btnBulkApply").onclick = applyBulk;
+  $("#btnBulkCancel").onclick = () => $("#dlgBulk").close();
+
+  $("#btnScan").onclick = openScan;
+  $("#btnScanDone").onclick = closeScan;
+  $("#btnScanExport").onclick = scanExport;
+  $("#scanInput").addEventListener("keydown", e => {
+    if(e.key === "Enter"){ e.preventDefault(); doScan(e.target.value); }
+  });
+  $("#dlgScan").addEventListener("click", e => {
+    if(e.target.id !== "btnScanAdd" && e.target.tagName !== "INPUT") $("#scanInput").focus();
+  });
+
+  $("#btnBackupDir").onclick = chooseBackupDir;
+  $("#btnBackupNow").onclick = () => writeBackup(true);
+  $("#btnBackupOff").onclick = backupOff;
+
+  $("#healthBadge").parentElement.title = "Duplicate, blank and unverified record checks";
   $("#btnClear").onclick = () => {
     $("#q").value = ""; colFilters[T().id] = {}; buildHead(); renderRows();
   };
@@ -1326,6 +1851,7 @@ function init(){
   $("#btnExitCopy").onclick = () => { $("#dlgExit").close(); $("#btnCopy").click(); };
   if(!window.showSaveFilePicker && !DB.readOnly) rail("", "This browser can't save in place — use Edge or Chrome");
   restoreHandle();
+  restoreBackupDir();
 }
 init();
 </script>
