@@ -112,11 +112,21 @@ thead th{position:sticky;top:0;background:var(--thbg);height:30px;
 thead th .ind{font-family:var(--mono);color:var(--steel);margin-left:4px}
 thead tr.filters th{position:sticky;top:30px;background:var(--filterbg);padding:4px 6px;cursor:auto;
   border-bottom:1px solid var(--line);z-index:2}
-thead tr.filters input,thead tr.filters select{width:100%;min-width:88px;border:1px solid var(--line);
+thead tr.filters input,thead tr.filters select{width:100%;min-width:70px;border:1px solid var(--line);
   border-radius:var(--r);padding:3px 6px;font-size:12px;background:var(--panel);font-family:var(--ui);
   text-transform:none;letter-spacing:0;color:var(--ink)}
+thead tr.filters .fcell{display:flex;gap:3px;min-width:150px}
+thead tr.filters select.op{flex:0 0 68px;min-width:68px;padding:3px 2px;color:var(--muted);font-size:11px}
+thead tr.filters select.op.set{color:var(--steel);font-weight:600;border-color:var(--steel)}
 thead tr.filters input.on,thead tr.filters select.on{border-color:var(--steel);background:var(--steel-dim)}
+thead tr.filters input[disabled]{opacity:.4}
 tbody tr:hover{background:var(--rowhover)}
+tbody tr.grouphead td{background:var(--steel-dim);font-weight:600;font-size:12px;
+  letter-spacing:.04em;border-bottom:1px solid var(--steel);border-top:1px solid var(--line);
+  position:sticky;top:64px;z-index:1}
+tbody tr.grouphead .gcount{font-family:var(--mono);font-weight:400;color:var(--muted);margin-left:8px}
+tbody tr.grouphead:hover td{background:var(--steel-dim)}
+.groupTitle{font-weight:600;font-size:11.5pt;margin:14px 0 5px;border-bottom:1px solid #000;padding-bottom:2px}
 td.mono{font-family:var(--mono);font-size:12.5px}
 td.actions{white-space:nowrap;text-align:right}
 td.actions button{background:none;border:0;cursor:pointer;color:var(--muted);padding:2px 5px;border-radius:var(--r)}
@@ -268,6 +278,10 @@ body.readonly .editonly{display:none !important}
   thead th{background:#fff;border-bottom:1.5px solid #000;color:#000;position:static}
   td,th{padding:3px 6px;font-size:9pt}
   tbody tr{break-inside:avoid}
+  tbody tr.grouphead td{background:#fff !important;border-top:1.5px solid #000;
+    border-bottom:1px solid #000;position:static;font-size:10pt;padding-top:8px}
+  tbody tr.grouphead{break-after:avoid;break-inside:avoid}
+  .groupTitle{break-after:avoid}
   body.print-detail #dataPanel,body.print-detail #logPanel{display:none}
   body.print-detail #printDetail{display:block}
   body.print-detail .sheet{break-inside:avoid;border:1px solid #000;padding:8px 10px;margin-bottom:9px}
@@ -324,6 +338,9 @@ body.readonly .editonly{display:none !important}
   <section class="view on" id="viewData">
     <div id="filters">
       <input type="search" id="q" placeholder="Search every column..." aria-label="Search all columns">
+      <label class="inline" style="gap:5px"><span class="note">Group by</span>
+        <select id="groupBy" data-dynamic style="border:1px solid var(--line);border-radius:var(--r);padding:5px 8px;background:var(--panel)"></select>
+      </label>
       <button class="btn" id="btnClear">Clear all filters</button>
       <span class="count" id="countLine"></span>
     </div>
@@ -465,11 +482,26 @@ body.readonly .editonly{display:none !important}
   </div>
 </dialog>
 
+<dialog id="dlgExit">
+  <div class="dh">Unsaved changes</div>
+  <div class="db">
+    <p style="margin:0 0 10px">You have changes that haven't been written to
+      <span id="exitFile" class="note">the file</span> yet.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px" id="exitWhy"></p>
+  </div>
+  <div class="df">
+    <button class="btn" id="btnExitStay">Keep working</button>
+    <button class="btn" id="btnExitCopy">Export a copy instead</button>
+    <button class="btn primary" id="btnExitSave">Save now</button>
+  </div>
+</dialog>
+
 <dialog id="dlgPrint">
   <div class="dh">Print</div>
   <div class="db">
     <p style="margin:0 0 10px;color:var(--muted)">Prints what your filters currently show —
       <span id="printScope" class="note"></span></p>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:13px" id="printGroupNote"></p>
     <div class="field">
       <label>Layout</label>
       <label style="display:flex;gap:7px;align-items:flex-start;margin-bottom:7px;text-transform:none;letter-spacing:0;color:var(--ink)">
@@ -504,6 +536,8 @@ const DEFAULT_TABLES = [{
     {key:"network",  label:"Network",      type:"choice", grid:true, options:[]},
     {key:"status",   label:"Status",       type:"choice", grid:true, options:["In Use","In Storage","In Repair","Retired"]},
     {key:"assigned", label:"Assigned To",  type:"text",   grid:true},
+    {key:"room",     label:"Room",         type:"text",   grid:true},
+    {key:"cubicle",  label:"Cubicle",      type:"text",   grid:true},
     {key:"location", label:"Location",     type:"text",   grid:true},
     {key:"notes",    label:"Notes",        type:"notes",  grid:false}
   ],
@@ -514,7 +548,15 @@ const CHIP = {"in use":"in-use","in storage":"storage","in repair":"repair","ret
 
 let DB, handle = null, dirty = false, autosaveTimer = null;
 let curTable = null, editingId = null, staged = null, manageTable = null;
-const sortState = {}, colFilters = {};
+const sortState = {}, colFilters = {}, groupBy = {};
+
+function buildGroupSel(){
+  const t = T();
+  if(groupBy[t.id] && !t.fields.some(f => f.key === groupBy[t.id])) groupBy[t.id] = "";
+  $("#groupBy").innerHTML = '<option value="">— nothing —</option>' +
+    t.fields.map(f => '<option value="' + f.key + '"' +
+      ((groupBy[t.id]||"") === f.key ? " selected" : "") + ">" + esc(f.label) + "</option>").join("");
+}
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -737,58 +779,102 @@ function renderLog(){
 }
 
 /* ---------------- table view ---------------- */
+const OPS_TEXT = {has:"contains", is:"is exactly", starts:"starts with", ends:"ends with",
+  not:"is not", empty:"is empty", filled:"is filled"};
+const OPS_CHOICE = {is:"is exactly", not:"is not", has:"contains", empty:"is empty", filled:"is filled"};
+const NAT = new Intl.Collator(undefined, {numeric:true, sensitivity:"base"});
+
 function gridFields(t){ return t.fields.filter(f => f.grid !== false); }
 function distinct(t, key){
-  return [...new Set(t.rows.map(r => r[key]).filter(v => v !== undefined && v !== ""))].sort();
+  return [...new Set(t.rows.map(r => r[key]).filter(v => v !== undefined && v !== ""))]
+    .sort((a,b) => NAT.compare(a,b));
 }
+function getF(tid, key){
+  const cf = colFilters[tid] || (colFilters[tid] = {});
+  return cf[key] || (cf[key] = {op:"has", v:""});
+}
+function fActive(f){ return f.op === "empty" || f.op === "filled" || !!f.v; }
+
 function buildHead(){
   const t = T(), gf = gridFields(t), st = sortState[t.id] || (sortState[t.id] = {key:t.keyField, dir:1});
-  const cf = colFilters[t.id] || (colFilters[t.id] = {});
   $("#thead").innerHTML =
     "<tr>" + gf.map(f => '<th data-key="' + f.key + '">' + esc(f.label) +
       '<span class="ind">' + (st.key === f.key ? (st.dir > 0 ? "\u2191" : "\u2193") : "") + "</span></th>").join("") +
       '<th class="actions editonly"></th></tr>' +
     '<tr class="filters">' + gf.map(f => {
-      const v = cf[f.key] || "";
-      if(f.type === "choice"){
-        const vals = [...new Set((f.options||[]).concat(distinct(t, f.key)))].sort();
-        return '<th><select data-f="' + f.key + '" class="' + (v?"on":"") + '"><option value="">All</option>' +
-          vals.map(o => '<option' + (o === v ? " selected" : "") + ">" + esc(o) + "</option>").join("") +
-          "</select></th>";
+      const cur = getF(t.id, f.key), isChoice = f.type === "choice";
+      const ops = isChoice ? OPS_CHOICE : OPS_TEXT;
+      const noVal = cur.op === "empty" || cur.op === "filled";
+      const opSel = '<select class="op ' + (fActive(cur) ? "set" : "") + '" data-op="' + f.key + '">' +
+        Object.keys(ops).map(k => '<option value="' + k + '"' + (k === cur.op ? " selected" : "") + ">" +
+          ops[k] + "</option>").join("") + "</select>";
+      let val;
+      if(noVal) val = '<input disabled placeholder="—">';
+      else if(isChoice && cur.op !== "has"){
+        const vals = [...new Set((f.options||[]).concat(distinct(t, f.key)))].sort((a,b) => NAT.compare(a,b));
+        val = '<select data-f="' + f.key + '" class="' + (cur.v ? "on" : "") + '"><option value="">Any</option>' +
+          vals.map(o => '<option' + (o === cur.v ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select>";
+      } else {
+        val = '<input data-f="' + f.key + '" class="' + (cur.v ? "on" : "") +
+          '" value="' + esc(cur.v) + '" placeholder="value">';
       }
-      return '<th><input data-f="' + f.key + '" class="' + (v?"on":"") +
-        '" value="' + esc(v) + '" placeholder="filter"></th>';
+      return '<th><div class="fcell">' + opSel + val + "</div></th>";
     }).join("") + '<th class="actions editonly"></th></tr>';
 
   $("#thead").querySelectorAll("th[data-key]").forEach(th => th.onclick = () => {
     if(st.key === th.dataset.key) st.dir *= -1; else { st.key = th.dataset.key; st.dir = 1; }
     buildHead(); renderRows();
   });
+  $("#thead").querySelectorAll("[data-op]").forEach(n => n.onchange = () => {
+    getF(t.id, n.dataset.op).op = n.value;
+    buildHead(); renderRows();
+  });
   $("#thead").querySelectorAll("[data-f]").forEach(n => {
     const ev = n.tagName === "SELECT" ? "change" : "input";
     n.addEventListener(ev, () => {
-      cf[n.dataset.f] = n.value;
+      const f = getF(t.id, n.dataset.f);
+      f.v = n.value;
       n.classList.toggle("on", !!n.value);
+      const op = $('[data-op="' + n.dataset.f + '"]');
+      if(op) op.classList.toggle("set", fActive(f));
       renderRows();
     });
   });
+  buildGroupSel();
+}
+
+function cellMatches(cell, f){
+  const c = String(cell == null ? "" : cell);
+  if(f.op === "empty")  return c.trim() === "";
+  if(f.op === "filled") return c.trim() !== "";
+  if(!f.v) return true;
+  const C = c.trim().toLowerCase(), V = f.v.trim().toLowerCase();
+  switch(f.op){
+    case "is":     return C === V;
+    case "starts": return C.startsWith(V);
+    case "ends":   return C.endsWith(V);
+    case "not":    return !C.includes(V);
+    default:       return C.includes(V);
+  }
 }
 function filtered(){
   const t = T(), q = $("#q").value.trim().toLowerCase(), cf = colFilters[t.id] || {};
   const st = sortState[t.id] || {key:t.keyField, dir:1};
+  const gb = groupBy[t.id] || "";
   return t.rows.filter(r => {
     for(const k in cf){
-      const v = cf[k]; if(!v) continue;
-      const cell = String(r[k]||"");
-      const f = t.fields.find(x => x.key === k);
-      if(f && f.type === "choice"){ if(cell !== v) return false; }
-      else if(!cell.toLowerCase().includes(v.toLowerCase())) return false;
+      const f = cf[k];
+      if(!fActive(f)) continue;
+      if(!cellMatches(r[k], f)) return false;
     }
     if(!q) return true;
     return t.fields.some(f => String(r[f.key]||"").toLowerCase().includes(q));
   }).sort((a,b) => {
-    const A = String(a[st.key]||"").toLowerCase(), B = String(b[st.key]||"").toLowerCase();
-    return A < B ? -st.dir : A > B ? st.dir : 0;
+    if(gb){
+      const g = NAT.compare(String(a[gb]||"\uffff"), String(b[gb]||"\uffff"));
+      if(g) return g;
+    }
+    return NAT.compare(String(a[st.key]||""), String(b[st.key]||"")) * st.dir;
   });
 }
 function renderRows(){
@@ -804,19 +890,43 @@ function renderRows(){
     $("#printDetail").innerHTML = ""; return;
   }
   em.style.display = "none";
-  tb.innerHTML = rows.map(r => "<tr>" + gf.map(f => {
-    const v = r[f.key] || "";
-    if(f.type === "choice" && v)
-      return '<td><span class="chip ' + (CHIP[v.toLowerCase()]||"") + '">' + esc(v) + "</span></td>";
-    return '<td class="' + (f.mono?"mono":"") + '">' + esc(v) + "</td>";
-  }).join("") + '<td class="actions editonly"><button data-e="' + r._id + '">Edit</button>' +
-    '<button class="del" data-d="' + r._id + '">Delete</button></td></tr>').join("");
+  const gb = groupBy[t.id] || "";
+  const gbLabel = gb ? (t.fields.find(f => f.key === gb)||{}).label : "";
+  const span = gf.length + 1;
+  let last = null, html = "";
+  rows.forEach(r => {
+    if(gb){
+      const g = r[gb] || "(blank)";
+      if(g !== last){
+        last = g;
+        const n = rows.filter(x => (x[gb]||"(blank)") === g).length;
+        html += '<tr class="grouphead"><td colspan="' + span + '">' + esc(gbLabel) + " " + esc(g) +
+          '<span class="gcount">' + n + (n === 1 ? " asset" : " assets") + "</span></td></tr>";
+      }
+    }
+    html += "<tr>" + gf.map(f => {
+      const v = r[f.key] || "";
+      if(f.type === "choice" && v)
+        return '<td><span class="chip ' + (CHIP[v.toLowerCase()]||"") + '">' + esc(v) + "</span></td>";
+      return '<td class="' + (f.mono?"mono":"") + '">' + esc(v) + "</td>";
+    }).join("") + '<td class="actions editonly"><button data-e="' + r._id + '">Edit</button>' +
+      '<button class="del" data-d="' + r._id + '">Delete</button></td></tr>';
+  });
+  tb.innerHTML = html;
   tb.querySelectorAll("[data-e]").forEach(b => b.onclick = () => openEdit(b.dataset.e));
   tb.querySelectorAll("[data-d]").forEach(b => b.onclick = () => removeRec(b.dataset.d));
-  $("#printDetail").innerHTML = rows.map(r =>
-    '<div class="sheet"><h3>' + esc(r[t.keyField] || "(no identifier)") + "</h3><dl>" +
-    t.fields.filter(f => f.key !== t.keyField).map(f =>
-      "<dt>" + esc(f.label) + "</dt><dd>" + (esc(r[f.key]) || "&mdash;") + "</dd>").join("") + "</dl></div>").join("");
+
+  last = null;
+  $("#printDetail").innerHTML = rows.map(r => {
+    let head = "";
+    if(gb){
+      const g = r[gb] || "(blank)";
+      if(g !== last){ last = g; head = '<div class="groupTitle">' + esc(gbLabel) + " " + esc(g) + "</div>"; }
+    }
+    return head + '<div class="sheet"><h3>' + esc(r[t.keyField] || "(no identifier)") + "</h3><dl>" +
+      t.fields.filter(f => f.key !== t.keyField).map(f =>
+        "<dt>" + esc(f.label) + "</dt><dd>" + (esc(r[f.key]) || "&mdash;") + "</dd>").join("") + "</dl></div>";
+  }).join("");
 }
 function renderTabs(){
   $("#tableTabs").innerHTML = DB.tables.map(t =>
@@ -1128,7 +1238,10 @@ function init(){
   document.querySelectorAll("nav .tab[data-view]").forEach(b => b.onclick = () => show(b.dataset.view));
   $("#q").oninput = renderRows;
   $("#logQ").oninput = renderLog;
-  $("#btnClear").onclick = () => { $("#q").value = ""; colFilters[T().id] = {}; buildHead(); renderRows(); };
+  $("#groupBy").onchange = e => { groupBy[T().id] = e.target.value; renderRows(); };
+  $("#btnClear").onclick = () => {
+    $("#q").value = ""; colFilters[T().id] = {}; buildHead(); renderRows();
+  };
 
   $("#btnAdd").onclick = () => openEdit(null);
   $("#btnSaveRec").onclick = commitEdit;
@@ -1146,6 +1259,11 @@ function init(){
     $("#printTitle").textContent = T().name;
     $("#printMeta").textContent = "Exported " + (DB.exported||today()) + "  \u2022  " + n + " records shown";
     $("#printScope").textContent = n + (n === 1 ? " record" : " records") + " in " + T().name;
+    const gb = groupBy[T().id];
+    const gl = gb ? (T().fields.find(f => f.key === gb)||{}).label : "";
+    $("#printGroupNote").textContent = gb
+      ? "Grouped by " + gl + ", with a heading and count for each one."
+      : "Not grouped. Set “Group by” above the table to break the report into sections.";
     $("#dlgPrint").showModal();
   };
   $("#btnCancelPrint").onclick = () => $("#dlgPrint").close();
@@ -1178,7 +1296,34 @@ function init(){
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "f"){ e.preventDefault(); show("data"); $("#q").focus(); }
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === "d"){ e.preventDefault(); toggleTheme(); }
   });
-  window.addEventListener("beforeunload", e => { if(dirty){ e.preventDefault(); e.returnValue = ""; } });
+  /* Browsers do not let a page draw its own dialog during unload — the
+     confirm you see at that moment is Chrome's own and its wording is fixed.
+     What we can do: try one last write on the way out, and if the user
+     backs out of Chrome's prompt, meet them with real choices. */
+  let leaving = false;
+  window.addEventListener("beforeunload", e => {
+    if(!dirty || DB.readOnly) return;
+    if(handle) save(true);          // best effort, may not finish
+    leaving = true;
+    setTimeout(() => {              // only runs if the page survived
+      if(leaving && dirty) openExit();
+      leaving = false;
+    }, 400);
+    e.preventDefault(); e.returnValue = "";
+  });
+
+  function openExit(){
+    if($("#dlgExit").open) return;
+    $("#exitFile").textContent = handle ? handle.name : "a file";
+    $("#exitWhy").textContent = handle
+      ? "Autosave normally handles this a second after each change. Saving now makes sure the last edit made it."
+      : "This copy isn't connected to a file yet, so nothing has been written to disk. Save now to pick where it lives.";
+    $("#dlgExit").showModal();
+  }
+  window.openExit = openExit;
+  $("#btnExitStay").onclick = () => $("#dlgExit").close();
+  $("#btnExitSave").onclick = async () => { $("#dlgExit").close(); await save(false); };
+  $("#btnExitCopy").onclick = () => { $("#dlgExit").close(); $("#btnCopy").click(); };
   if(!window.showSaveFilePicker && !DB.readOnly) rail("", "This browser can't save in place — use Edge or Chrome");
   restoreHandle();
 }
