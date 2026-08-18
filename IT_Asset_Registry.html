@@ -245,6 +245,14 @@ dialog .df{padding:11px 16px;border-top:1px solid var(--line);display:flex;gap:8
 
 html[data-theme="dark"] .btn.primary{color:#0d1319;font-weight:600}
 html[data-theme="dark"] .btn.primary:hover{color:#0d1319}
+#colPick{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;max-height:190px;overflow:auto;
+  border:1px solid var(--line);border-radius:var(--r);padding:8px}
+#colPick label{display:flex;gap:6px;align-items:center;cursor:pointer;font-size:13px;
+  text-transform:none;letter-spacing:0;color:var(--ink);margin:0}
+#colPick label input{width:auto}
+#colPick label.off{color:var(--muted)}
+#printTable{display:none;width:100%}
+
 /* bulk + focus bars */
 #bulkBar,#focusBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;
   padding:7px 11px;border-radius:var(--r);border:1px solid var(--steel);background:var(--steel-dim)}
@@ -325,7 +333,9 @@ body.readonly .editonly{display:none !important}
     border-bottom:1px solid #000;position:static;font-size:10pt;padding-top:8px}
   tbody tr.grouphead{break-after:avoid;break-inside:avoid}
   .groupTitle{break-after:avoid}
-  body.print-detail #dataPanel,body.print-detail #logPanel{display:none}
+  body.print-detail #dataPanel,body.print-detail #logPanel,body.print-detail #printTable{display:none}
+  body.print-table #dataPanel,body.print-table #logPanel,body.print-table #printDetail{display:none}
+  body.print-table #printTable{display:table !important}
   body.print-detail #printDetail{display:block}
   body.print-detail .sheet{break-inside:avoid;border:1px solid #000;padding:8px 10px;margin-bottom:9px}
   body.print-detail .sheet h3{margin:0 0 6px;font-family:var(--mono);font-size:11pt;
@@ -409,6 +419,7 @@ body.readonly .editonly{display:none !important}
       <div class="empty" id="emptyState" style="display:none"></div>
     </div>
     <div id="printDetail" data-dynamic></div>
+    <table id="printTable" data-dynamic></table>
   </section>
 
   <!-- CHANGE LOG -->
@@ -626,6 +637,17 @@ body.readonly .editonly{display:none !important}
         <span><b>Detail sheets</b><br><span class="note">A boxed sheet per record with every column, including notes.</span></span>
       </label>
     </div>
+    <div class="field">
+      <label>Columns</label>
+      <div class="inline" style="margin-bottom:6px">
+        <button class="btn sm" id="btnColsAll">All</button>
+        <button class="btn sm" id="btnColsGrid">Match the screen</button>
+        <button class="btn sm" id="btnColsNone">None</button>
+        <span class="note" id="colCount"></span>
+      </div>
+      <div id="colPick" data-dynamic></div>
+      <p class="note" style="margin:6px 0 0">Remembered per table and saved with the file.</p>
+    </div>
   </div>
   <div class="df">
     <button class="btn" id="btnCancelPrint">Cancel</button>
@@ -695,6 +717,7 @@ function load(){
   DB.schemaVersion = 2;
   DB.log = DB.log || [];
   DB.views = DB.views || {};
+  DB.printCols = DB.printCols || {};
   if(!DB.tables){
     if(Array.isArray(DB.assets) && DB.assets.length){
       DB.tables = JSON.parse(JSON.stringify(DEFAULT_TABLES));
@@ -1051,6 +1074,81 @@ function renderFocusBar(){
   $("#btnUnfocus").onclick = () => { focusIds = null; renderFocusBar(); renderRows(); };
 }
 
+/* ---------------- print output ---------------- */
+function printFields(t){
+  const sel = (DB.printCols || {})[t.id];
+  if(!sel) return gridFields(t);
+  const keep = t.fields.filter(f => sel.includes(f.key));
+  return keep.length ? keep : gridFields(t);
+}
+function buildColPick(){
+  const t = T(), chosen = printFields(t).map(f => f.key);
+  $("#colPick").innerHTML = t.fields.map(f =>
+    '<label class="' + (chosen.includes(f.key) ? "" : "off") + '"><input type="checkbox" data-c="' +
+    f.key + '"' + (chosen.includes(f.key) ? " checked" : "") + "> " + esc(f.label) +
+    (f.grid === false ? ' <span class="note">(off-grid)</span>' : "") + "</label>").join("");
+  $("#colPick").querySelectorAll("[data-c]").forEach(n => n.onchange = () => {
+    n.closest("label").classList.toggle("off", !n.checked);
+    storeCols();
+  });
+  colCount();
+}
+function storeCols(){
+  const t = T();
+  DB.printCols = DB.printCols || {};
+  DB.printCols[t.id] = [...$("#colPick").querySelectorAll("[data-c]")]
+    .filter(n => n.checked).map(n => n.dataset.c);
+  touch(); colCount();
+}
+function colCount(){
+  const n = [...$("#colPick").querySelectorAll("[data-c]")].filter(x => x.checked).length;
+  $("#colCount").textContent = n + (n === 1 ? " column" : " columns") +
+    (n ? "" : " — falls back to what's on screen");
+}
+function setCols(which){
+  const t = T();
+  $("#colPick").querySelectorAll("[data-c]").forEach(n => {
+    const f = t.fields.find(x => x.key === n.dataset.c);
+    n.checked = which === "all" ? true : which === "none" ? false : f.grid !== false;
+    n.closest("label").classList.toggle("off", !n.checked);
+  });
+  storeCols();
+}
+function buildPrintOutput(){
+  const t = T(), fs = printFields(t), rows = filtered();
+  const gb = groupBy[t.id] || "";
+  const gbLabel = gb ? (t.fields.find(f => f.key === gb)||{}).label : "";
+
+  let last = null, body = "";
+  rows.forEach(r => {
+    if(gb){
+      const g = r[gb] || "(blank)";
+      if(g !== last){
+        last = g;
+        const n = rows.filter(x => (x[gb]||"(blank)") === g).length;
+        body += '<tr class="grouphead"><td colspan="' + fs.length + '">' + esc(gbLabel) + " " + esc(g) +
+          '<span class="gcount">' + n + (n === 1 ? " asset" : " assets") + "</span></td></tr>";
+      }
+    }
+    body += "<tr>" + fs.map(f => "<td>" + esc(r[f.key]) + "</td>").join("") + "</tr>";
+  });
+  $("#printTable").innerHTML = "<thead><tr>" +
+    fs.map(f => "<th>" + esc(f.label) + "</th>").join("") + "</tr></thead><tbody>" + body + "</tbody>";
+
+  last = null;
+  const detail = fs.filter(f => f.key !== t.keyField);
+  $("#printDetail").innerHTML = rows.map(r => {
+    let head = "";
+    if(gb){
+      const g = r[gb] || "(blank)";
+      if(g !== last){ last = g; head = '<div class="groupTitle">' + esc(gbLabel) + " " + esc(g) + "</div>"; }
+    }
+    return head + '<div class="sheet"><h3>' + esc(r[t.keyField] || "(no identifier)") + "</h3><dl>" +
+      detail.map(f => "<dt>" + esc(f.label) + "</dt><dd>" + (esc(r[f.key]) || "&mdash;") + "</dd>").join("") +
+      "</dl></div>";
+  }).join("");
+}
+
 function gridFields(t){ return t.fields.filter(f => f.grid !== false); }
 function distinct(t, key){
   return [...new Set(t.rows.map(r => r[key]).filter(v => v !== undefined && v !== ""))]
@@ -1163,7 +1261,8 @@ function renderRows(){
     em.innerHTML = t.rows.length
       ? "<strong>Nothing matches those filters</strong>Clear them to see all " + t.rows.length + " records."
       : "<strong>" + esc(t.name) + " is empty</strong>Add a record, or bring a spreadsheet over on the Import tab.";
-    $("#printDetail").innerHTML = ""; renderFocusBar(); renderBulkBar(); return;
+    $("#printDetail").innerHTML = ""; $("#printTable").innerHTML = "";
+    renderFocusBar(); renderBulkBar(); return;
   }
   em.style.display = "none";
   renderFocusBar();
@@ -1204,18 +1303,6 @@ function renderRows(){
   const pa = $("#pickAll");
   if(pa) pa.checked = shown.length > 0 && shown.every(i => selection.has(i));
   renderBulkBar();
-
-  last = null;
-  $("#printDetail").innerHTML = rows.map(r => {
-    let head = "";
-    if(gb){
-      const g = r[gb] || "(blank)";
-      if(g !== last){ last = g; head = '<div class="groupTitle">' + esc(gbLabel) + " " + esc(g) + "</div>"; }
-    }
-    return head + '<div class="sheet"><h3>' + esc(r[t.keyField] || "(no identifier)") + "</h3><dl>" +
-      t.fields.filter(f => f.key !== t.keyField).map(f =>
-        "<dt>" + esc(f.label) + "</dt><dd>" + (esc(r[f.key]) || "&mdash;") + "</dd>").join("") + "</dl></div>";
-  }).join("");
 }
 function renderTabs(){
   $("#tableTabs").innerHTML = DB.tables.map(t =>
@@ -1789,14 +1876,20 @@ function init(){
     $("#printGroupNote").textContent = gb
       ? "Grouped by " + gl + ", with a heading and count for each one."
       : "Not grouped. Set “Group by” above the table to break the report into sections.";
+    buildColPick();
     $("#dlgPrint").showModal();
   };
   $("#btnCancelPrint").onclick = () => $("#dlgPrint").close();
   $("#btnDoPrint").onclick = () => {
-    document.body.classList.toggle("print-detail",
-      document.querySelector("input[name=playout]:checked").value === "detail");
+    const detail = document.querySelector("input[name=playout]:checked").value === "detail";
+    buildPrintOutput();
+    document.body.classList.toggle("print-detail", detail);
+    document.body.classList.toggle("print-table", !detail);
     $("#dlgPrint").close(); setTimeout(() => window.print(), 60);
   };
+  $("#btnColsAll").onclick = () => setCols("all");
+  $("#btnColsNone").onclick = () => setCols("none");
+  $("#btnColsGrid").onclick = () => setCols("grid");
 
   $("#btnRead").onclick = () => readStaged($("#paste").value);
   $("#csvFile").onchange = e => {
